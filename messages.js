@@ -102,6 +102,21 @@ function msgFindResults(results) {
   return `🔍 ${results.length} kết quả:\n\n` + lines.join("\n\n");
 }
 
+function kbFindResults(results) {
+  if (!results.length) return null;
+  const buttons = results.map((r) => {
+    const a = r.artist;
+    const name = a.name || a.handle || "Unknown";
+    return { text: `✏️ Sửa ${name}`, callback_data: `find_edit:${a.id}:${a.handle}` };
+  });
+  // Split into rows of 2
+  const rows = [];
+  for (let i = 0; i < buttons.length; i += 2) {
+    rows.push(buttons.slice(i, i + 2));
+  }
+  return { inline_keyboard: rows };
+}
+
 function msgFindEmpty(query) {
   return `🔍 Không tìm thấy ai phù hợp với "${query}"`;
 }
@@ -202,6 +217,6 @@ module.exports = {
   msgEditMenu, msgEditMedium, msgEditStyle,
   msgFindResults, msgFindEmpty,
   msgUnknown, msgHelp,
-  kbConfirm, kbMedium, kbStyle, kbEditMenu, kbNotionLink,
+  kbConfirm, kbMedium, kbStyle, kbEditMenu, kbNotionLink, kbFindResults,
   MEDIUMS, STYLES,
 };

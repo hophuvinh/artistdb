@@ -8,7 +8,7 @@ const {
   msgEditMenu, msgEditMedium, msgEditStyle,
   msgFindResults, msgFindEmpty,
   msgUnknown, msgHelp,
-  kbConfirm, kbMedium, kbStyle, kbEditMenu, kbNotionLink,
+  kbConfirm, kbMedium, kbStyle, kbEditMenu, kbNotionLink, kbFindResults,
 } = require("./messages");
 
 const NOTION_DB_URL = `https://notion.so/${(process.env.NOTION_DB_ID || "").replace(/-/g, "")}`;
@@ -78,7 +78,9 @@ bot.onText(/\/find (.+)/, async (msg, match) => {
     if (!results.length) {
       bot.sendMessage(chatId, msgFindEmpty(query));
     } else {
-      bot.sendMessage(chatId, msgFindResults(results));
+      bot.sendMessage(chatId, msgFindResults(results), {
+        reply_markup: kbFindResults(results),
+      });
     }
   } catch (err) {
     console.error(err);
@@ -436,6 +438,28 @@ bot.on("callback_query", async (query) => {
     s.state = "edit_remind";
     const current = s.artist?.remind ? `\nHiện tại: ${s.artist.remind}` : "";
     bot.sendMessage(chatId, `Remind mới là gì?${current}`);
+    return;
+  }
+
+  if (data.startsWith("find_edit:")) {
+    const parts = data.split(":");
+    const pageId = parts[1];
+    const handle = parts[2] || "";
+    try {
+      const all = await getAllArtists();
+      const artist = all.find((a) => a.id === pageId);
+      if (!artist) {
+        bot.sendMessage(chatId, `Không tìm thấy artist.`);
+        return;
+      }
+      const s2 = getSession(chatId);
+      s2.state = "edit_menu";
+      s2.artist = artist;
+      bot.sendMessage(chatId, msgEditMenu(artist), { reply_markup: kbEditMenu() });
+    } catch (err) {
+      console.error(err);
+      bot.sendMessage(chatId, "❌ Lỗi. Thử lại nhé.");
+    }
     return;
   }
 });
