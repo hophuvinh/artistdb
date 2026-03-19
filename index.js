@@ -268,6 +268,10 @@ bot.on("callback_query", async (query) => {
 
   if (data === "confirm:save") {
     try {
+      if (!s.draft) {
+        bot.sendMessage(chatId, "❌ Không tìm thấy dữ liệu. Thử nhập lại nhé.");
+        return;
+      }
       const artist = await createArtist(s.draft);
       clearSession(chatId);
       bot.sendMessage(chatId, msgSavedOk(artist), {
@@ -275,7 +279,7 @@ bot.on("callback_query", async (query) => {
       });
     } catch (err) {
       console.error(err);
-      bot.sendMessage(chatId, "❌ Lưu thất bại. Thử lại nhé.");
+      bot.sendMessage(chatId, `❌ Lưu thất bại:\n${err.message || err}`);
     }
     return;
   }
