@@ -1,6 +1,16 @@
-const Anthropic = require("@anthropic-ai/sdk");
+const Groq = require("groq-sdk");
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_KEY });
+const client = new Groq({ apiKey: process.env.GROQ_KEY });
+const MODEL = "llama-3.3-70b-versatile";
+
+async function chat(prompt) {
+  const res = await client.chat.completions.create({
+    model: MODEL,
+    max_tokens: 500,
+    messages: [{ role: "user", content: prompt }],
+  });
+  return res.choices[0].message.content.trim();
+}
 
 // ── Parse raw input → { name, handle, link, mediums, styles } ─────────────
 
@@ -26,14 +36,10 @@ Return ONLY valid JSON, no markdown, no explanation:
   "styles": string[]
 }`;
 
-  const res = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 500,
-    messages: [{ role: "user", content: prompt }],
-  });
-
   try {
-    return JSON.parse(res.content[0].text);
+    const text = await chat(prompt);
+    const clean = text.replace(/```json|```/g, "").trim();
+    return JSON.parse(clean);
   } catch {
     return null;
   }
@@ -48,7 +54,6 @@ async function searchArtists(query, artists) {
     id: a.id,
     name: a.name,
     handle: a.handle,
-    link: a.link,
     mediums: a.mediums,
     styles: a.styles,
   }));
@@ -68,22 +73,13 @@ Instructions:
 - Return only artists with score >= 30, sorted by score descending
 - Maximum 5 results
 
-Return ONLY valid JSON array, no markdown:
-[
-  {
-    "id": "...",
-    "score": 85
-  }
-]`;
-
-  const res = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 500,
-    messages: [{ role: "user", content: prompt }],
-  });
+Return ONLY valid JSON array, no markdown, no explanation:
+[{"id": "...", "score": 85}]`;
 
   try {
-    const scored = JSON.parse(res.content[0].text);
+    const text = await chat(prompt);
+    const clean = text.replace(/```json|```/g, "").trim();
+    const scored = JSON.parse(clean);
     return scored
       .map(({ id, score }) => ({
         artist: artists.find((a) => a.id === id),
