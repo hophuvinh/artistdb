@@ -1,23 +1,7 @@
-// ── Score bar ──────────────────────────────────────────────────────────────
-
 function scoreBar(score) {
   const filled = Math.round(score / 10);
   return "█".repeat(filled) + "░".repeat(10 - filled) + ` ${score}%`;
 }
-
-// ── Format artist for display ──────────────────────────────────────────────
-
-function formatArtist(artist) {
-  const name = artist.name || artist.handle || "Unknown";
-  const handle = artist.handle ? `· @${artist.handle.replace(/^@/, "")}` : "";
-  const medium = artist.mediums?.join(" · ") || "—";
-  const style = artist.styles?.join(" · ") || "—";
-  const link = artist.link || "—";
-
-  return `${name} ${handle}\nMedium: ${medium}\nStyle:  ${style}\nLink:   ${link}`;
-}
-
-// ── Messages ───────────────────────────────────────────────────────────────
 
 function msgConfirm(artist) {
   const name = artist.name || artist.handle || "Unknown";
@@ -91,12 +75,14 @@ function msgFindResults(results) {
     const a = r.artist;
     const name = a.name || a.handle || "Unknown";
     const handle = a.handle ? `· @${a.handle.replace(/^@/, "")}` : "";
+    const remind = a.remind ? `\n   Remind: ${a.remind}` : "";
     return (
       `${i + 1}. ${name} ${handle}\n` +
       `   Medium: ${a.mediums?.join(" · ") || "—"}\n` +
       `   Style:  ${a.styles?.join(" · ") || "—"}\n` +
       `   ${a.link || "—"}\n` +
-      `   ${scoreBar(r.score)}`
+      `   ${scoreBar(r.score)}` +
+      remind
     );
   });
   return `🔍 ${results.length} kết quả:\n\n` + lines.join("\n\n");
@@ -107,9 +93,8 @@ function kbFindResults(results) {
   const buttons = results.map((r) => {
     const a = r.artist;
     const name = a.name || a.handle || "Unknown";
-    return { text: `✏️ Sửa ${name}`, callback_data: `find_edit:${a.id}:${a.handle}` };
+    return { text: `✏️ Sửa ${name}`, callback_data: `find_edit:${a.id}` };
   });
-  // Split into rows of 2
   const rows = [];
   for (let i = 0; i < buttons.length; i += 2) {
     rows.push(buttons.slice(i, i + 2));
@@ -133,42 +118,39 @@ function msgHelp(notionUrl) {
   return (
     "Artist Rolodex 📋\n\n" +
     "Lưu artist mới:\n" +
-    "[link] n: tên  m: medium, medium  s: style, style\n\n" +
+    "[link] n: tên  m: medium, medium  s: style, style  r: ghi chú\n\n" +
     "n: tên thật (không bắt buộc)\n" +
     "m: medium (bắt buộc)\n" +
-    "s: style (bắt buộc)\n\n" +
+    "s: style (bắt buộc)\n" +
+    "r: ghi chú gợi nhớ (không bắt buộc)\n\n" +
     "Ví dụ:\n" +
     "instagram.com/kuken.dr n: Khang Dương m: illustration s: dark, maximalism r: hay làm nhạc\n\n" +
     "──────────────────\n" +
-    "/find [từ khoá]   Tìm theo tên, medium, style\n" +
+    "/find [từ khoá]   Tìm theo tên, medium, style, ghi chú\n" +
     "/edit @handle     Sửa thông tin artist\n" +
     "/help             Hướng dẫn"
   );
 }
-
-// ── Keyboards ──────────────────────────────────────────────────────────────
 
 const MEDIUMS = ["Illustration", "3D", "Motion", "Branding", "Print", "Photo"];
 const STYLES = ["Dark", "Minimal", "Organic", "Playful", "Maximalism", "Editorial", "Surreal"];
 
 function kbConfirm() {
   return {
-    inline_keyboard: [
-      [
-        { text: "✓ Lưu", callback_data: "confirm:save" },
-        { text: "Sửa medium", callback_data: "confirm:edit_medium" },
-        { text: "Sửa style", callback_data: "confirm:edit_style" },
-      ],
-    ],
+    inline_keyboard: [[
+      { text: "✓ Lưu", callback_data: "confirm:save" },
+      { text: "Sửa medium", callback_data: "confirm:edit_medium" },
+      { text: "Sửa style", callback_data: "confirm:edit_style" },
+    ]],
   };
 }
 
 function kbMedium(selected = []) {
-  const selectedLower = selected.map((s) => s.toLowerCase());
+  const sel = selected.map((s) => s.toLowerCase());
   return {
     inline_keyboard: [
       MEDIUMS.map((m) => ({
-        text: selectedLower.includes(m.toLowerCase()) ? `${m} ✓` : m,
+        text: sel.includes(m.toLowerCase()) ? `${m} ✓` : m,
         callback_data: `medium:${m.toLowerCase()}`,
       })),
       [{ text: "✓ Xong", callback_data: "medium:done" }],
@@ -177,15 +159,13 @@ function kbMedium(selected = []) {
 }
 
 function kbStyle(selected = []) {
-  const selectedLower = selected.map((s) => s.toLowerCase());
+  const sel = selected.map((s) => s.toLowerCase());
   const rows = [];
   for (let i = 0; i < STYLES.length; i += 4) {
-    rows.push(
-      STYLES.slice(i, i + 4).map((s) => ({
-        text: selectedLower.includes(s.toLowerCase()) ? `${s} ✓` : s,
-        callback_data: `style:${s.toLowerCase()}`,
-      }))
-    );
+    rows.push(STYLES.slice(i, i + 4).map((s) => ({
+      text: sel.includes(s.toLowerCase()) ? `${s} ✓` : s,
+      callback_data: `style:${s.toLowerCase()}`,
+    })));
   }
   rows.push([{ text: "✓ Xong", callback_data: "style:done" }]);
   return { inline_keyboard: rows };
@@ -193,30 +173,26 @@ function kbStyle(selected = []) {
 
 function kbEditMenu() {
   return {
-    inline_keyboard: [
-      [
-        { text: "Tên", callback_data: "edit:name" },
-        { text: "Medium", callback_data: "edit:medium" },
-        { text: "Style", callback_data: "edit:style" },
-        { text: "Link", callback_data: "edit:link" },
-        { text: "Remind", callback_data: "edit:remind" },
-      ],
-    ],
+    inline_keyboard: [[
+      { text: "Tên", callback_data: "edit:name" },
+      { text: "Medium", callback_data: "edit:medium" },
+      { text: "Style", callback_data: "edit:style" },
+      { text: "Link", callback_data: "edit:link" },
+      { text: "Remind", callback_data: "edit:remind" },
+    ]],
   };
 }
 
 function kbNotionLink(url) {
-  return {
-    inline_keyboard: [[{ text: "Xem trên Notion →", url }]],
-  };
+  return { inline_keyboard: [[{ text: "Xem trên Notion →", url }]] };
 }
 
 module.exports = {
   msgConfirm, msgSavedOk, msgUpdatedOk,
   msgAskMedium, msgAskStyle, msgAskBoth,
   msgEditMenu, msgEditMedium, msgEditStyle,
-  msgFindResults, msgFindEmpty,
+  msgFindResults, msgFindEmpty, kbFindResults,
   msgUnknown, msgHelp,
-  kbConfirm, kbMedium, kbStyle, kbEditMenu, kbNotionLink, kbFindResults,
+  kbConfirm, kbMedium, kbStyle, kbEditMenu, kbNotionLink,
   MEDIUMS, STYLES,
 };

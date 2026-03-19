@@ -12,8 +12,6 @@ async function chat(prompt) {
   return res.choices[0].message.content.trim();
 }
 
-// ── Parse raw input → { name, handle, link, mediums, styles } ─────────────
-
 async function parseArtistInput(text) {
   const prompt = `Parse this artist input and extract structured data.
 
@@ -26,7 +24,8 @@ Rules:
 - mediums: array of values after "m:" split by comma
 - styles: array of values after "s:" split by comma
 - remind: full text after "r:" if present, otherwise null
-- Normalize tags: lowercase, trim whitespace. Do NOT lowercase remind.
+- Normalize mediums and styles: lowercase, trim whitespace
+- Do NOT lowercase remind, keep as-is
 
 Return ONLY valid JSON, no markdown, no explanation:
 {
@@ -39,15 +38,13 @@ Return ONLY valid JSON, no markdown, no explanation:
 }`;
 
   try {
-    const text = await chat(prompt);
-    const clean = text.replace(/```json|```/g, "").trim();
+    const raw = await chat(prompt);
+    const clean = raw.replace(/```json|```/g, "").trim();
     return JSON.parse(clean);
   } catch {
     return null;
   }
 }
-
-// ── Fuzzy + semantic search ────────────────────────────────────────────────
 
 async function searchArtists(query, artists) {
   if (!artists.length) return [];
@@ -80,8 +77,8 @@ Return ONLY valid JSON array, no markdown, no explanation:
 [{"id": "...", "score": 85}]`;
 
   try {
-    const text = await chat(prompt);
-    const clean = text.replace(/```json|```/g, "").trim();
+    const raw = await chat(prompt);
+    const clean = raw.replace(/```json|```/g, "").trim();
     const scored = JSON.parse(clean);
     return scored
       .map(({ id, score }) => ({
