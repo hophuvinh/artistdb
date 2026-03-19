@@ -209,6 +209,13 @@ bot.on("message", async (msg) => {
     return;
   }
 
+  if (s.state === "edit_remind") {
+    await updateArtist(s.artist.id, { remind: text });
+    clearSession(chatId);
+    bot.sendMessage(chatId, msgUpdatedOk(s.artist.handle, { Remind: text }));
+    return;
+  }
+
   // ── New artist input ───────────────────────────────────────────────────
 
   const thinking = await bot.sendMessage(chatId, "⏳ Đang xử lý...");
@@ -224,6 +231,11 @@ bot.on("message", async (msg) => {
 
     // Store draft in session
     s.draft = { ...parsed, addedBy: from };
+    // parse r: remind from raw text
+    if (!parsed.remind) {
+      const remindMatch = text.match(/r:\s*(.+?)(?=\s+[msnr]:|$)/i);
+      if (remindMatch) s.draft.remind = remindMatch[1].trim();
+    }
     s.state = "confirm";
 
     const hasMedium = parsed.mediums?.length > 0;
@@ -417,6 +429,13 @@ bot.on("callback_query", async (query) => {
   if (data === "edit:link") {
     s.state = "edit_link";
     bot.sendMessage(chatId, "Link mới là gì?");
+    return;
+  }
+
+  if (data === "edit:remind") {
+    s.state = "edit_remind";
+    const current = s.artist?.remind ? `\nHiện tại: ${s.artist.remind}` : "";
+    bot.sendMessage(chatId, `Remind mới là gì?${current}`);
     return;
   }
 });

@@ -25,7 +25,8 @@ Rules:
 - name: value after "n:" if present, otherwise null
 - mediums: array of values after "m:" split by comma
 - styles: array of values after "s:" split by comma
-- Normalize each tag: lowercase, trim whitespace
+- remind: full text after "r:" if present, otherwise null
+- Normalize tags: lowercase, trim whitespace. Do NOT lowercase remind.
 
 Return ONLY valid JSON, no markdown, no explanation:
 {
@@ -33,7 +34,8 @@ Return ONLY valid JSON, no markdown, no explanation:
   "handle": string or null,
   "name": string or null,
   "mediums": string[],
-  "styles": string[]
+  "styles": string[],
+  "remind": string or null
 }`;
 
   try {
@@ -56,6 +58,7 @@ async function searchArtists(query, artists) {
     handle: a.handle,
     mediums: a.mediums,
     styles: a.styles,
+    remind: a.remind || "",
   }));
 
   const prompt = `You are helping a creative director find the right artist/designer.
@@ -66,7 +69,7 @@ Artist list:
 ${JSON.stringify(list, null, 2)}
 
 Instructions:
-- Match query against name, handle, mediums, styles
+- Match query against name, handle, mediums, styles, and remind (free-text notes)
 - Support fuzzy matching: "maximal" matches "maximalism", "tối" matches "dark", "3D" matches any artist with 3D in mediums or styles
 - Support Vietnamese and English
 - Score each match from 0-100

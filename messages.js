@@ -22,12 +22,14 @@ function formatArtist(artist) {
 function msgConfirm(artist) {
   const name = artist.name || artist.handle || "Unknown";
   const handle = artist.handle ? `· @${artist.handle.replace(/^@/, "")}` : "";
+  const remind = artist.remind ? `\nRemind: ${artist.remind}` : "";
   return (
     `Thông tin artist:\n` +
     `Tên:    ${name} ${handle}\n` +
     `Medium: ${artist.mediums?.join(" · ") || "—"}\n` +
     `Style:  ${artist.styles?.join(" · ") || "—"}\n` +
-    `Link:   ${artist.link || "—"}`
+    `Link:   ${artist.link || "—"}` +
+    remind
   );
 }
 
@@ -61,13 +63,15 @@ function msgAskBoth() {
 function msgEditMenu(artist) {
   const name = artist.name || artist.handle || "Unknown";
   const handle = artist.handle ? artist.handle.replace(/^@/, "") : "";
+  const remind = artist.remind ? `\nRemind: ${artist.remind}` : "";
   return (
     `Artist @${handle}\n` +
     `Tên:    ${name}\n` +
     `Medium: ${artist.mediums?.join(" · ") || "—"}\n` +
     `Style:  ${artist.styles?.join(" · ") || "—"}\n` +
-    `Link:   ${artist.link || "—"}\n\n` +
-    `Bạn muốn sửa thông tin nào?`
+    `Link:   ${artist.link || "—"}` +
+    remind +
+    `\n\nBạn muốn sửa thông tin nào?`
   );
 }
 
@@ -119,7 +123,7 @@ function msgHelp(notionUrl) {
     "m: medium (bắt buộc)\n" +
     "s: style (bắt buộc)\n\n" +
     "Ví dụ:\n" +
-    "instagram.com/kuken.dr n: Khang Dương m: illustration s: dark, maximalism\n\n" +
+    "instagram.com/kuken.dr n: Khang Dương m: illustration s: dark, maximalism r: hay làm nhạc\n\n" +
     "──────────────────\n" +
     "/find [từ khoá]   Tìm theo tên, medium, style\n" +
     "/edit @handle     Sửa thông tin artist\n" +
@@ -180,6 +184,7 @@ function kbEditMenu() {
         { text: "Medium", callback_data: "edit:medium" },
         { text: "Style", callback_data: "edit:style" },
         { text: "Link", callback_data: "edit:link" },
+        { text: "Remind", callback_data: "edit:remind" },
       ],
     ],
   };

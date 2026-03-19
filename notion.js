@@ -19,13 +19,17 @@ function fromRichText(prop) {
   return prop?.rich_text?.[0]?.plain_text ?? "";
 }
 
+function fromUrl(prop) {
+  return prop?.url ?? "";
+}
+
 function pageToArtist(page) {
   const p = page.properties;
   return {
     id: page.id,
     name: fromTitle(p["Name"]),
     handle: fromRichText(p["Handle"]),
-    link: fromRichText(p["Link"]),
+    link: fromUrl(p["Link"]),
     mediums: fromMultiSelect(p["Medium"]),
     styles: fromMultiSelect(p["Style"]),
     addedBy: fromRichText(p["Added By"]),
@@ -38,7 +42,7 @@ async function createArtist({ name, handle, link, mediums, styles, addedBy }) {
     properties: {
       Name: { title: [{ text: { content: name || handle || "Unknown" } }] },
       Handle: { rich_text: [{ text: { content: handle || "" } }] },
-      Link: { rich_text: [{ text: { content: link || "" } }] },
+      Link: { url: link || null },
       Medium: { multi_select: toMultiSelect(mediums) },
       Style: { multi_select: toMultiSelect(styles) },
       "Added By": { rich_text: [{ text: { content: addedBy || "" } }] },
@@ -78,7 +82,7 @@ async function updateArtist(pageId, { name, handle, link, mediums, styles }) {
   if (handle !== undefined)
     properties["Handle"] = { rich_text: [{ text: { content: handle } }] };
   if (link !== undefined)
-    properties["Link"] = { rich_text: [{ text: { content: link || "" } }] };
+    properties["Link"] = { url: link || null };
   if (mediums !== undefined)
     properties["Medium"] = { multi_select: toMultiSelect(mediums) };
   if (styles !== undefined)
